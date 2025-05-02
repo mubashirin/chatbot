@@ -13,3 +13,4 @@ config/config.yaml
 *.db5
 *.db6
 *.db7
+.cursor/
