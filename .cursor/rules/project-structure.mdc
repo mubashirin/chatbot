@@ -1,0 +1,28 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Архитектура и структура проекта чат-бота (aiogram)
+
+Проект разделён на модули для масштабируемости и поддержки параллельных чатов:
+
+- [config/](mdc:config) — конфигурация и логирование
+- [db/](mdc:db) — модели и интерфейс хранилища
+- [handlers/](mdc:handlers) — обработчики команд и сообщений
+- [keyboards/](mdc:keyboards) — инлайн- и reply-клавиатуры
+- [middlewares/](mdc:middlewares) — авторизация (HMAC), троттлинг
+- [services/](mdc:services) — логика управления чатами и API
+- [utils/](mdc:utils) — вспомогательные функции (HMAC, прочее)
+- [.env](mdc:.env) — переменные окружения
+- [bot.py](mdc:bot.py) — точка входа, запуск бота
+- [requirements.txt](mdc:requirements.txt) — зависимости
+
+**Ключевые моменты:**
+- Каждый админ может вести несколько чатов параллельно
+- Чаты и состояния хранятся в базе ([db/models.py](mdc:db/models.py))
+- Логика маршрутизации и управления чатами — [services/chat_manager.py](mdc:services/chat_manager.py)
+- Авторизация админов через HMAC — [middlewares/auth.py](mdc:middlewares/auth.py)
+- UI-клавиатуры для управления чатами — [keyboards/](mdc:keyboards)
+
+Структура позволяет легко расширять функционал без затрагивания существующего кода.
