@@ -2,9 +2,12 @@
 
 from aiogram import Router, types, F
 from aiogram.filters import CommandStart, Command, Filter
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from services.admin_api import AdminAPI
 from services.chat_manager import ChatManager
 from aiogram.types import CallbackQuery
+from db.storage import Storage
+from db.models import Chat
 
 router = Router()
 chat_manager = ChatManager()
@@ -15,21 +18,57 @@ async def is_admin(user_id: int) -> bool:
 
 @router.message(CommandStart())
 async def admin_start_handler(message: types.Message):
-    if await is_admin(message.from_user.id):
-        await message.answer("Вы администратор. Используйте /chats для просмотра активных чатов.")
-    else:
-        await message.answer("Добро пожаловать!")
+    if not await is_admin(message.from_user.id):
+        return
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📋 Чаты")],
+            [KeyboardButton(text="📊 Статистика")]
+        ],
+        resize_keyboard=True
+    )
+    await message.answer("👨‍💼 Панель администратора", reply_markup=kb)
 
-@router.message(Command("chats"))
+@router.message(F.text == "📋 Чаты")
 async def admin_chats_handler(message: types.Message):
     if not await is_admin(message.from_user.id):
         await message.answer("Нет доступа.")
         return
-    chats = chat_manager.get_active_chats(message.from_user.id)
+    
+    storage = Storage()
+    chats = storage.db.query(Chat).filter_by(is_active=True).all()
+    
     if not chats:
-        await message.answer("У вас нет активных чатов.")
+        await message.answer("📋 Список чатов\n\nНет активных чатов.")
         return
-    text = "Ваши активные чаты:\n" + "\n".join([f"Чат #{c.chat_id} с пользователем {c.user_id}" for c in chats])
+    
+    text = "📋 Список чатов\n\n"
+    for chat in chats:
+        user = storage.get_user(chat.user_id)
+        user_name = f"@{user.username}" if user and user.username else str(chat.user_id)
+        status = "✅ Принят" if chat.accepted else "⏳ Ожидает"
+        text += f"#{chat.chat_id} - {user_name} - {status}\n"
+    
+    await message.answer(text)
+
+@router.message(F.text == "📊 Статистика")
+async def admin_stats_handler(message: types.Message):
+    if not await is_admin(message.from_user.id):
+        await message.answer("Нет доступа.")
+        return
+    
+    storage = Storage()
+    total_chats = storage.db.query(Chat).count()
+    active_chats = storage.db.query(Chat).filter_by(is_active=True).count()
+    accepted_chats = storage.db.query(Chat).filter_by(accepted=True).count()
+    completed_chats = total_chats - active_chats
+    
+    text = f"📊 Статистика\n\n"
+    text += f"Всего чатов: {total_chats}\n"
+    text += f"Активных: {active_chats}\n"
+    text += f"Принятых: {accepted_chats}\n"
+    text += f"Завершенных: {completed_chats}\n"
+    
     await message.answer(text)
 
 @router.message(Command("reply"))

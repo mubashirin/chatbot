@@ -17,10 +17,7 @@ class NotAdmin(Filter):
 
 @router.message(CommandStart())
 async def start_handler(message: types.Message):
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔚 Завершить беседу", callback_data="end_chat_by_client")]
-    ])
-    await message.answer("Добро пожаловать! Ожидайте ответа администратора.", reply_markup=kb)
+    await message.answer("Добро пожаловать! Ожидайте ответа администратора.")
 
 @router.callback_query(lambda c: c.data == "end_chat_by_client")
 async def end_chat_by_client_handler(callback: types.CallbackQuery):
